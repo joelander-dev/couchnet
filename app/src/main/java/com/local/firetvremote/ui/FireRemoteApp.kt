@@ -348,6 +348,20 @@ private fun RemoteScreen(
                     )
                 }
             }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                MediaKey(RemoteActions.PLAY, "Play", onHold, onRelease, Modifier.weight(1f))
+                MediaKey(RemoteActions.PAUSE, "Pause", onHold, onRelease, Modifier.weight(1f))
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                MediaKey(RemoteActions.REWIND, "Rewind", onHold, onRelease, Modifier.weight(1f))
+                MediaKey(RemoteActions.FAST_FORWARD, "Fast-forward", onHold, onRelease, Modifier.weight(1f))
+            }
             HoldKey(
                 action = RemoteActions.INPUT,
                 label = "Input",
@@ -360,19 +374,36 @@ private fun RemoteScreen(
             ) {
                 Text("INPUT", fontWeight = FontWeight.Bold)
             }
-            HoldKey(
-                action = RemoteActions.BACK,
-                label = "Back",
-                modifier = Modifier
-                    .fillMaxWidth(0.46f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(14.dp),
-                onHold = onHold,
-                onRelease = onRelease,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text("BACK", fontWeight = FontWeight.SemiBold)
+                HoldKey(
+                    action = RemoteActions.HOME,
+                    label = "Home",
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    onHold = onHold,
+                    onRelease = onRelease,
+                ) {
+                    Text("HOME", fontWeight = FontWeight.SemiBold)
+                }
+                HoldKey(
+                    action = RemoteActions.BACK,
+                    label = "Back",
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    onHold = onHold,
+                    onRelease = onRelease,
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("BACK", fontWeight = FontWeight.SemiBold)
+                }
             }
         }
 
@@ -422,6 +453,26 @@ private fun Dpad(
             ArrowKey(RemoteActions.RIGHT, "Right", Icons.AutoMirrored.Filled.KeyboardArrowRight, key, onHold, onRelease)
         }
         ArrowKey(RemoteActions.DOWN, "Down", Icons.Filled.KeyboardArrowDown, key, onHold, onRelease)
+    }
+}
+
+@Composable
+private fun MediaKey(
+    action: String,
+    label: String,
+    onHold: (String) -> Unit,
+    onRelease: () -> Unit,
+    modifier: Modifier,
+) {
+    HoldKey(
+        action = action,
+        label = label,
+        modifier = modifier.height(52.dp),
+        shape = RoundedCornerShape(16.dp),
+        onHold = onHold,
+        onRelease = onRelease,
+    ) {
+        Text(label, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

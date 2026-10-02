@@ -91,7 +91,11 @@ class FireTvClient(
             return@withContext CommandResult.Failed("That button is not available.")
         }
         val request = try {
-            buildCommandRequest(host, token, action, permitLoopback)
+            if (action in RemoteActions.media) {
+                buildMediaRequest(host, token, action, permitLoopback)
+            } else {
+                buildCommandRequest(host, token, action, permitLoopback)
+            }
         } catch (error: IllegalArgumentException) {
             return@withContext CommandResult.Failed("That address is not on your home network.")
         }
@@ -100,12 +104,11 @@ class FireTvClient(
         try {
             call.execute().use { response ->
                 val body = response.body?.string().orEmpty()
+                val rejected = body.contains("Bad arguments", ignoreCase = true)
                 when {
-                    response.code == 200 -> CommandResult.Ok
-                    response.code == 500 && !body.contains("Bad arguments", ignoreCase = true) -> CommandResult.Ok
                     response.code == 401 || response.code == 403 -> CommandResult.AuthExpired
-                    body.contains("Bad arguments", ignoreCase = true) ->
-                        CommandResult.Failed("The Fire TV did not accept that button.")
+                    rejected -> CommandResult.Failed("The Fire TV did not accept that button.")
+                    response.code == 200 || response.code == 500 -> CommandResult.Ok
                     else -> CommandResult.Failed("The Fire TV returned an unexpected response.")
                 }
             }
@@ -169,6 +172,29 @@ internal fun buildWakeRequest(host: String, permitLoopback: Boolean = false): Re
         .build()
 }
 
+internal fun buildMediaRequest(
+    host: String,
+    token: String,
+    action: String,
+    permitLoopback: Boolean = false,
+): Request {
+    requireLocal(host, permitLoopback)
+    val (queryAction, json) = when (action) {
+        RemoteActions.PLAY -> "play" to "{}"
+        RemoteActions.PAUSE -> "pause" to "{}"
+        RemoteActions.FAST_FORWARD -> "scan" to SCAN_FORWARD
+        RemoteActions.REWIND -> "scan" to SCAN_BACK
+        else -> throw IllegalArgumentException("Not a media button")
+    }
+    return Request.Builder()
+        .url("https://$host:8080/v1/media?action=$queryAction")
+        .header("User-Agent", USER_AGENT)
+        .header("X-Api-Key", API_KEY)
+        .header("X-Client-Token", token)
+        .post(json.toRequestBody(JSON))
+        .build()
+}
+
 internal fun buildCommandRequest(
     host: String,
     token: String,
@@ -212,3 +238,7 @@ private fun requireLocal(host: String, permitLoopback: Boolean) {
 private const val API_KEY = "0987654321"
 private const val USER_AGENT = "okhttp/4.10.0"
 private val JSON = "application/json; charset=utf-8".toMediaType()
+private const val SCAN_FORWARD =
+    """{"direction":"forward","keyAction":{"keyActionType":"keyDown"}}"""
+private const val SCAN_BACK =
+    """{"direction":"back","keyAction":{"keyActionType":"keyDown"}}"""

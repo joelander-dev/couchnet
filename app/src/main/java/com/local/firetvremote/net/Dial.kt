@@ -58,10 +58,15 @@ private fun looksLikeToken(value: String): Boolean {
 
 private fun xmlTag(xml: String, name: String): String? {
     val match = Regex(
-        """<(?:[A-Za-z0-9]+:)?$name(?:\s[^>]*)?>([^<]*)</(?:[A-Za-z0-9]+:)?$name>""",
-        RegexOption.IGNORE_CASE,
+        """<(?:[A-Za-z0-9]+:)?$name(?:\s[^>]*)?>\s*(?:<!\[CDATA\[(.*?)\]\]>|([^<]*?))\s*</(?:[A-Za-z0-9]+:)?$name>""",
+        setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
     ).find(xml) ?: return null
-    return match.groupValues[1].trim().takeIf { it.isNotEmpty() }
+    val value = match.groupValues[1].ifBlank { match.groupValues[2] }
+    return value.trim().takeIf { it.isNotEmpty() }
+}
+
+fun isGeneratedTvName(name: String): Boolean {
+    return name == "Possible Fire TV" || name == "Fire TV"
 }
 
 private fun String.decodeXml(): String {

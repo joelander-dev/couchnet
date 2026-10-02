@@ -41,6 +41,15 @@ class FireTvDiscovery(
 ) {
     private val appContext = context.applicationContext
 
+    suspend fun friendlyName(host: String): String? = withContext(Dispatchers.IO) {
+        if (!PrivateAddress.isPrivate(host)) return@withContext null
+        preferLan()
+        when (val identified = identify("http://$host:8008/description.xml", host)) {
+            is Identified.Fire -> identified.tv.name
+            else -> null
+        }
+    }
+
     suspend fun scan(deep: Boolean): List<DiscoveredTv> = withContext(Dispatchers.IO) {
         preferLan()
         val fromSsdp = ssdp()
@@ -127,29 +136,117 @@ class FireTvDiscovery(
 
     private fun identify(url: String, host: String): Identified {
         if (!PrivateAddress.isPrivate(host)) return Identified.NotFire
-        val urls = listOf(url, "http://$host:8008/description.xml", "http://$host:8008/ssdp/device-desc.xml")
-            .distinct()
-        var sawDescription = false
+        val urls = buildList {
+            add(url)
+            add("http://$host:8008/description.xml")
+            add("http://$host:8008/ssdp/device-desc.xml")
+            add("http://$host:8008/dial/dd.xml")
+        }.distinct()
+        readDescription(urls, host)?.let { return it }
+        val located = unicastLocation(host)
+        if (located != null) {
+            readDescription(listOf(located), host)?.let { return it }
+        }
+        return Identified.Unknown
+    }
+
+    private fun readDescription(urls: List<String>, host: String): Identified? {
+        var sawOtherDevice = false
         for (candidate in urls) {
-            try {
-                val request = Request.Builder().url(candidate).get().build()
-                http.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return@use
-                    val description = parseDialDescription(response.body?.string().orEmpty())
-                    val hasFields = description.friendlyName != null ||
-                        description.manufacturer != null ||
-                        description.modelName != null
-                    if (!hasFields) return@use
-                    sawDescription = true
-                    if (!isFireTv(description)) return Identified.NotFire
-                    val name = description.friendlyName?.takeIf { it.isNotBlank() } ?: "Fire TV"
-                    return Identified.Fire(DiscoveredTv(name = name, host = host, confirmed = true))
-                }
-            } catch (_: Exception) {
+            val body = fetchBody(candidate) ?: continue
+            val description = parseDialDescription(body)
+            val hasFields = description.friendlyName != null ||
+                description.manufacturer != null ||
+                description.modelName != null
+            if (!hasFields) continue
+            if (!isFireTv(description)) {
+                sawOtherDevice = true
                 continue
             }
+            val name = description.friendlyName?.takeIf { it.isNotBlank() }
+                ?: description.modelName?.takeIf { it.isNotBlank() }
+                ?: "Fire TV"
+            return Identified.Fire(DiscoveredTv(name = name, host = host, confirmed = true))
         }
-        return if (sawDescription) Identified.NotFire else Identified.Unknown
+        return if (sawOtherDevice) Identified.NotFire else null
+    }
+
+    private fun fetchBody(startUrl: String): String? {
+        var url = startUrl
+        for (attempt in 0 until 4) {
+            val host = hostFromHttpUrl(url) ?: return null
+            if (!PrivateAddress.isPrivate(host)) return null
+            try {
+                val request = Request.Builder()
+                    .url(url)
+                    .header("User-Agent", "okhttp/4.10.0")
+                    .get()
+                    .build()
+                var redirected: String? = null
+                val body = http.newCall(request).execute().use { response ->
+                    if (response.code in 300..399) {
+                        val next = response.header("Location") ?: return null
+                        redirected = response.request.url.resolve(next)?.toString()
+                        return@use null
+                    }
+                    if (!response.isSuccessful) return null
+                    response.body?.string()
+                }
+                val nextUrl = redirected
+                if (nextUrl != null) {
+                    url = nextUrl
+                    continue
+                }
+                return body
+            } catch (_: Exception) {
+                return null
+            }
+        }
+        return null
+    }
+
+    private fun unicastLocation(host: String): String? {
+        val targets = listOf(
+            "urn:dial-multiscreen-org:service:dial:1",
+            "upnp:rootdevice",
+        )
+        for (target in targets) {
+            val message = unicastSearch(host, target) ?: continue
+            val location = locationFromSsdp(message) ?: continue
+            if (hostFromHttpUrl(location) == host) return location
+        }
+        return null
+    }
+
+    private fun unicastSearch(host: String, searchTarget: String): String? {
+        val payload = buildString {
+            append("M-SEARCH * HTTP/1.1\r\n")
+            append("HOST: $host:1900\r\n")
+            append("MAN: \"ssdp:discover\"\r\n")
+            append("MX: 1\r\n")
+            append("ST: $searchTarget\r\n")
+            append("\r\n")
+        }.toByteArray()
+        return try {
+            DatagramSocket().use { socket ->
+                socket.soTimeout = 800
+                lanNetwork()?.bindSocket(socket)
+                socket.send(
+                    DatagramPacket(
+                        payload,
+                        payload.size,
+                        InetAddress.getByName(host),
+                        1900,
+                    ),
+                )
+                val buffer = ByteArray(4096)
+                val packet = DatagramPacket(buffer, buffer.size)
+                socket.receive(packet)
+                String(packet.data, 0, packet.length, Charsets.UTF_8)
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun portOpen(host: String, port: Int): Boolean {

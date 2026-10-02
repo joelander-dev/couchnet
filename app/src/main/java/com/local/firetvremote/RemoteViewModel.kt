@@ -11,6 +11,7 @@ import com.local.firetvremote.net.FireTvClient
 import com.local.firetvremote.net.FireTvDiscovery
 import com.local.firetvremote.net.PrivateAddress
 import com.local.firetvremote.net.RemoteActions
+import com.local.firetvremote.net.isGeneratedTvName
 import com.local.firetvremote.net.buildHttpClient
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -61,6 +62,7 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
         if (last != null) {
             viewModelScope.launch { client.wake(last.host) }
         }
+        viewModelScope.launch { refreshGeneratedNames(saved) }
     }
 
     fun onManualAddress(value: String) {
@@ -103,10 +105,13 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
             } catch (_: Exception) {
                 emptyList()
             }
+            val saved = renameGeneratedDevices(store.load(), found)
             _state.update {
                 it.copy(
                     scanning = false,
                     discovered = found,
+                    saved = saved,
+                    screen = renamedScreen(it.screen, saved),
                     scanMessage = when {
                         found.isNotEmpty() -> "Choose a Fire TV to pair."
                         deep -> "None found. Enter the address from Settings, My Fire TV, About, Network."
@@ -115,6 +120,40 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
         }
+    }
+
+    private suspend fun refreshGeneratedNames(devices: List<SavedDevice>) {
+        val renamed = devices.map { device ->
+            if (!isGeneratedTvName(device.name)) {
+                device
+            } else {
+                val name = discovery.friendlyName(device.host)
+                if (name.isNullOrBlank() || isGeneratedTvName(name)) device else device.copy(name = name)
+            }
+        }
+        if (renamed == devices) return
+        store.save(renamed)
+        _state.update { it.copy(saved = renamed, screen = renamedScreen(it.screen, renamed)) }
+    }
+
+    private fun renameGeneratedDevices(
+        saved: List<SavedDevice>,
+        found: List<DiscoveredTv>,
+    ): List<SavedDevice> {
+        val names = found.filter { it.confirmed && !isGeneratedTvName(it.name) }.associate { it.host to it.name }
+        if (names.isEmpty()) return saved
+        val renamed = saved.map { device ->
+            val name = names[device.host]
+            if (name != null && isGeneratedTvName(device.name)) device.copy(name = name) else device
+        }
+        if (renamed != saved) store.save(renamed)
+        return renamed
+    }
+
+    private fun renamedScreen(screen: Screen, saved: List<SavedDevice>): Screen {
+        val remote = screen as? Screen.Remote ?: return screen
+        val match = saved.firstOrNull { it.host == remote.device.host } ?: return screen
+        return if (match.name == remote.device.name) screen else Screen.Remote(match)
     }
 
     fun startPairing(name: String, host: String) {

@@ -41,6 +41,52 @@ class LocalNetworkTest {
             buffer.readUtf8()
         })
         assertEquals("http://192.168.1.20:8009/apps/FireTVRemote", buildWakeRequest("192.168.1.20").url.toString())
+        assertEquals(
+            "https://192.168.1.20:8080/v1/FireTV?action=channel_up",
+            buildCommandRequest("192.168.1.20", "Ab12CdE", RemoteActions.CHANNEL_UP).url.toString(),
+        )
+        assertEquals(
+            "https://192.168.1.20:8080/v1/FireTV?action=channel_down",
+            buildCommandRequest("192.168.1.20", "Ab12CdE", RemoteActions.CHANNEL_DOWN).url.toString(),
+        )
+        assertEquals(
+            "https://192.168.1.20:8080/v1/FireTV?action=tv_input",
+            buildCommandRequest("192.168.1.20", "Ab12CdE", RemoteActions.INPUT).url.toString(),
+        )
+    }
+
+    @Test
+    fun mediaButtonsUseTheMediaEndpoint() {
+        val play = buildMediaRequest("192.168.1.20", "Ab12CdE", RemoteActions.PLAY)
+        assertEquals("https://192.168.1.20:8080/v1/media?action=play", play.url.toString())
+        assertEquals("0987654321", play.header("X-Api-Key"))
+        assertEquals("Ab12CdE", play.header("X-Client-Token"))
+        assertEquals("okhttp/4.10.0", play.header("User-Agent"))
+        assertEquals("{}", bodyText(play))
+
+        val pause = buildMediaRequest("192.168.1.20", "Ab12CdE", RemoteActions.PAUSE)
+        assertEquals("https://192.168.1.20:8080/v1/media?action=pause", pause.url.toString())
+        assertEquals("{}", bodyText(pause))
+
+        val forward = buildMediaRequest("192.168.1.20", "Ab12CdE", RemoteActions.FAST_FORWARD)
+        assertEquals("https://192.168.1.20:8080/v1/media?action=scan", forward.url.toString())
+        assertEquals(
+            """{"direction":"forward","keyAction":{"keyActionType":"keyDown"}}""",
+            bodyText(forward),
+        )
+
+        val rewind = buildMediaRequest("192.168.1.20", "Ab12CdE", RemoteActions.REWIND)
+        assertEquals("https://192.168.1.20:8080/v1/media?action=scan", rewind.url.toString())
+        assertEquals(
+            """{"direction":"back","keyAction":{"keyActionType":"keyDown"}}""",
+            bodyText(rewind),
+        )
+        assertFalse(play.url.toString().contains("/v1/FireTV"))
+        assertEquals("application/json; charset=utf-8", play.body!!.contentType().toString())
+        assertTrue(RemoteActions.FAST_FORWARD in RemoteActions.repeating)
+        assertTrue(RemoteActions.REWIND in RemoteActions.repeating)
+        assertFalse(RemoteActions.PLAY in RemoteActions.repeating)
+        assertFalse(RemoteActions.PAUSE in RemoteActions.repeating)
     }
 
     @Test
@@ -50,6 +96,17 @@ class LocalNetworkTest {
             throw AssertionError("public address was allowed")
         } catch (_: IllegalArgumentException) {
         }
+        try {
+            buildMediaRequest("8.8.8.8", "token", RemoteActions.PLAY)
+            throw AssertionError("public address was allowed for media")
+        } catch (_: IllegalArgumentException) {
+        }
+    }
+
+    private fun bodyText(request: okhttp3.Request): String {
+        val buffer = okio.Buffer()
+        request.body!!.writeTo(buffer)
+        return buffer.readUtf8()
     }
 
     @Test
@@ -67,6 +124,16 @@ class LocalNetworkTest {
         )
         assertTrue(isFireTv(description))
         assertEquals("Living Room", description.friendlyName)
+        assertEquals(
+            "Bedroom",
+            parseDialDescription("<friendlyName><![CDATA[Bedroom]]></friendlyName>").friendlyName,
+        )
+        assertTrue(isGeneratedTvName("Possible Fire TV"))
+        assertFalse(isGeneratedTvName("Living Room"))
+        assertEquals(
+            "https://192.168.1.20:8080/v1/FireTV?action=home",
+            buildCommandRequest("192.168.1.20", "Ab12CdE", RemoteActions.HOME).url.toString(),
+        )
         assertFalse(
             isFireTv(
                 parseDialDescription("<manufacturer>Google Inc.</manufacturer><modelName>Chromecast</modelName>"),

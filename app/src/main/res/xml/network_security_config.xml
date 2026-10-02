@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- The Fire TV wake and discovery calls are plain HTTP on the LAN.
+         The app refuses every address that is not a private IP before connecting. -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

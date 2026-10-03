@@ -192,9 +192,12 @@ private fun DevicesScreen(
             }
         }
 
-        if (state.discovered.isNotEmpty()) {
+        val unpaired = state.discovered.filter { found ->
+            state.saved.none { it.host == found.host }
+        }
+        if (unpaired.isNotEmpty()) {
             SectionLabel("On this network")
-            state.discovered.forEach { device ->
+            unpaired.forEach { device ->
                 DeviceRow(
                     title = device.name,
                     subtitle = if (device.confirmed) device.host else "${device.host} · not confirmed",
@@ -619,7 +622,7 @@ private fun StatusLine(status: String) {
 
 @Composable
 private fun SectionLabel(text: String) {
-    Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+    Text(text, color = Name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
 }
 
 @Composable

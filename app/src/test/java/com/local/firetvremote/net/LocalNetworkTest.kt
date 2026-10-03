@@ -50,9 +50,14 @@ class LocalNetworkTest {
             buildCommandRequest("192.168.1.20", "Ab12CdE", RemoteActions.CHANNEL_DOWN).url.toString(),
         )
         assertEquals(
-            "https://192.168.1.20:8080/v1/FireTV?action=tv_input",
-            buildCommandRequest("192.168.1.20", "Ab12CdE", RemoteActions.INPUT).url.toString(),
+            "https://192.168.1.20:8080/v1/FireTV?action=menu",
+            buildCommandRequest("192.168.1.20", "Ab12CdE", RemoteActions.OPTIONS).url.toString(),
         )
+        assertEquals(
+            "https://192.168.1.20:8080/v1/FireTV?action=power",
+            buildCommandRequest("192.168.1.20", "Ab12CdE", RemoteActions.POWER).url.toString(),
+        )
+        assertFalse(RemoteActions.POWER in RemoteActions.repeating)
     }
 
     @Test
@@ -139,6 +144,26 @@ class LocalNetworkTest {
                 parseDialDescription("<manufacturer>Google Inc.</manufacturer><modelName>Chromecast</modelName>"),
             ),
         )
+        val edition = parseDialDescription(
+            """
+            <device>
+              <deviceType>urn:schemas-upnp-org:device:tvdevice:1</deviceType>
+              <friendlyName>Living Room</friendlyName>
+              <manufacturer>AMZ</manufacturer>
+              <modelName>AFTMM</modelName>
+            </device>
+            """.trimIndent(),
+        )
+        assertTrue(isFireTv(edition))
+        assertEquals("Living Room", edition.friendlyName)
+        assertEquals("Living Room", decodeAdvertisedName("TmF0aGFuJ3MgVFY="))
+        assertEquals("Living Room", decodeAdvertisedName("Living Room"))
+        assertTrue(
+            ssdpLooksLikeFireTv(
+                "USN: uuid:amazon-fire-tv::upnp:rootdevice\r\nX-User-Agent: NRDP MDX\r\n",
+            ),
+        )
+        assertFalse(ssdpLooksLikeFireTv("USN: uuid:printer::upnp:rootdevice\r\n"))
         assertEquals(
             "http://192.168.1.20:8008/description.xml",
             locationFromSsdp("HTTP/1.1 200 OK\r\nLOCATION: http://192.168.1.20:8008/description.xml\r\nST: dial\r\n"),

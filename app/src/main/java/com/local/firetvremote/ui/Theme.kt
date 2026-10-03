@@ -5,12 +5,13 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val Ink = Color(0xFF0E0E10)
-val RemoteBody = Color(0xFF1C1C21)
-val KeyRest = Color(0xFF2C2C34)
+val Ink = Color(0xFF09090B)
+val RemoteBody = Color(0xFF141418)
+val KeyRest = Color(0xFF2A2A32)
+val Pad = Color(0xFF1C1C22)
 val KeyDown = Color(0xFFFF9900)
 val Amber = Color(0xFFFF9900)
-val Mist = Color(0xFFB7B7C2)
+val Mist = Color(0xFF9C9CA8)
 val Danger = Color(0xFFFFB4AB)
 
 private val Colors = darkColorScheme(

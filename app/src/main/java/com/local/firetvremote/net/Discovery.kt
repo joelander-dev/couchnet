@@ -15,10 +15,10 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.net.DatagramPacket
-import java.net.DatagramSocket
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.MulticastSocket
 import java.net.NetworkInterface
 import java.net.Socket
 import java.net.SocketTimeoutException
@@ -64,27 +64,41 @@ class FireTvDiscovery(
             setReferenceCounted(false)
         }
         val found = linkedMapOf<String, DiscoveredTv>()
-        val socket = DatagramSocket(null)
+        val socket = MulticastSocket(null)
         try {
             lock?.acquire()
             socket.reuseAddress = true
-            socket.broadcast = true
-            socket.bind(InetSocketAddress(0))
+            socket.timeToLive = 4
+            val localIp = localIpv4()
+            if (localIp != null) {
+                socket.bind(InetSocketAddress(localIp, 0))
+                val iface = NetworkInterface.getByInetAddress(InetAddress.getByName(localIp))
+                if (iface != null) {
+                    try {
+                        socket.joinGroup(
+                            InetSocketAddress(InetAddress.getByName("239.255.255.250"), 1900),
+                            iface,
+                        )
+                    } catch (_: Exception) {
+                    }
+                }
+            } else {
+                socket.bind(InetSocketAddress(0))
+            }
             lanNetwork()?.bindSocket(socket)
-            val payload = buildString {
-                append("M-SEARCH * HTTP/1.1\r\n")
-                append("HOST: 239.255.255.250:1900\r\n")
-                append("MAN: \"ssdp:discover\"\r\n")
-                append("MX: 2\r\n")
-                append("ST: urn:dial-multiscreen-org:service:dial:1\r\n")
-                append("\r\n")
-            }.toByteArray()
             val target = InetAddress.getByName("239.255.255.250")
+            val searches = listOf(
+                "urn:dial-multiscreen-org:service:dial:1",
+                "upnp:rootdevice",
+            )
             repeat(2) {
-                socket.send(DatagramPacket(payload, payload.size, target, 1900))
+                for (searchTarget in searches) {
+                    val payload = msearch("239.255.255.250", searchTarget)
+                    socket.send(DatagramPacket(payload, payload.size, target, 1900))
+                }
             }
             val deadline = System.currentTimeMillis() + 2500
-            val buffer = ByteArray(4096)
+            val buffer = ByteArray(8192)
             while (System.currentTimeMillis() < deadline) {
                 val remaining = (deadline - System.currentTimeMillis()).toInt().coerceAtLeast(1)
                 socket.soTimeout = remaining
@@ -95,14 +109,8 @@ class FireTvDiscovery(
                     break
                 }
                 val message = String(packet.data, 0, packet.length, Charsets.UTF_8)
-                val location = locationFromSsdp(message) ?: continue
-                val host = hostFromHttpUrl(location) ?: continue
-                if (found.containsKey(host)) continue
-                when (val identified = identify(location, host)) {
-                    is Identified.Fire -> found[host] = identified.tv
-                    Identified.Unknown -> found[host] = DiscoveredTv("Fire TV", host, confirmed = false)
-                    Identified.NotFire -> Unit
-                }
+                val host = packet.address?.hostAddress?.let { hostFromAddress(it) } ?: continue
+                rememberSsdp(found, host, message)
             }
         } catch (_: Exception) {
             return found.values.toList()
@@ -111,6 +119,29 @@ class FireTvDiscovery(
             if (lock?.isHeld == true) lock.release()
         }
         return found.values.toList()
+    }
+
+    private fun rememberSsdp(found: MutableMap<String, DiscoveredTv>, host: String, message: String) {
+        if (found[host]?.confirmed == true) return
+        val location = locationFromSsdp(message)
+        val fromDescription = if (location != null) {
+            val describedHost = hostFromHttpUrl(location) ?: host
+            identify(location, describedHost)
+        } else {
+            null
+        }
+        if (fromDescription is Identified.Fire) {
+            found[fromDescription.tv.host] = fromDescription.tv
+            return
+        }
+        val advertised = ssdpHeader(message, "X-Friendly-Name")?.let(::decodeAdvertisedName)
+        if (!advertised.isNullOrBlank() && ssdpLooksLikeFireTv(message)) {
+            found[host] = DiscoveredTv(advertised, host, confirmed = true)
+            return
+        }
+        if (fromDescription is Identified.Unknown && !found.containsKey(host)) {
+            found[host] = DiscoveredTv(advertised ?: "Fire TV", host, confirmed = false)
+        }
     }
 
     private suspend fun subnetScan(): List<DiscoveredTv> = coroutineScope {
@@ -138,14 +169,21 @@ class FireTvDiscovery(
         if (!PrivateAddress.isPrivate(host)) return Identified.NotFire
         val urls = buildList {
             add(url)
+            add("http://$host:60000/dd.xml")
             add("http://$host:8008/description.xml")
             add("http://$host:8008/ssdp/device-desc.xml")
             add("http://$host:8008/dial/dd.xml")
         }.distinct()
         readDescription(urls, host)?.let { return it }
-        val located = unicastLocation(host)
-        if (located != null) {
-            readDescription(listOf(located), host)?.let { return it }
+        for (message in unicastReplies(host)) {
+            val location = locationFromSsdp(message)
+            if (location != null) {
+                readDescription(listOf(location), host)?.let { return it }
+            }
+            val advertised = ssdpHeader(message, "X-Friendly-Name")?.let(::decodeAdvertisedName)
+            if (!advertised.isNullOrBlank() && ssdpLooksLikeFireTv(message)) {
+                return Identified.Fire(DiscoveredTv(advertised, host, confirmed = true))
+            }
         }
         return Identified.Unknown
     }
@@ -205,31 +243,25 @@ class FireTvDiscovery(
         return null
     }
 
-    private fun unicastLocation(host: String): String? {
+    private fun unicastReplies(host: String): List<String> {
+        val replies = mutableListOf<String>()
         val targets = listOf(
             "urn:dial-multiscreen-org:service:dial:1",
             "upnp:rootdevice",
         )
         for (target in targets) {
-            val message = unicastSearch(host, target) ?: continue
-            val location = locationFromSsdp(message) ?: continue
-            if (hostFromHttpUrl(location) == host) return location
+            replies += unicastSearch(host, target)
         }
-        return null
+        return replies
     }
 
-    private fun unicastSearch(host: String, searchTarget: String): String? {
-        val payload = buildString {
-            append("M-SEARCH * HTTP/1.1\r\n")
-            append("HOST: $host:1900\r\n")
-            append("MAN: \"ssdp:discover\"\r\n")
-            append("MX: 1\r\n")
-            append("ST: $searchTarget\r\n")
-            append("\r\n")
-        }.toByteArray()
+    private fun unicastSearch(host: String, searchTarget: String): List<String> {
+        val payload = msearch(host, searchTarget)
         return try {
-            DatagramSocket().use { socket ->
-                socket.soTimeout = 800
+            MulticastSocket(null).use { socket ->
+                socket.reuseAddress = true
+                localIpv4()?.let { socket.bind(InetSocketAddress(it, 0)) } ?: socket.bind(InetSocketAddress(0))
+                socket.soTimeout = 400
                 lanNetwork()?.bindSocket(socket)
                 socket.send(
                     DatagramPacket(
@@ -239,14 +271,40 @@ class FireTvDiscovery(
                         1900,
                     ),
                 )
-                val buffer = ByteArray(4096)
-                val packet = DatagramPacket(buffer, buffer.size)
-                socket.receive(packet)
-                String(packet.data, 0, packet.length, Charsets.UTF_8)
+                val found = mutableListOf<String>()
+                val deadline = System.currentTimeMillis() + 900
+                val buffer = ByteArray(8192)
+                while (System.currentTimeMillis() < deadline && found.size < 4) {
+                    val remaining = (deadline - System.currentTimeMillis()).toInt().coerceAtLeast(1)
+                    socket.soTimeout = remaining
+                    val packet = DatagramPacket(buffer, buffer.size)
+                    try {
+                        socket.receive(packet)
+                    } catch (_: SocketTimeoutException) {
+                        break
+                    }
+                    found += String(packet.data, 0, packet.length, Charsets.UTF_8)
+                }
+                found
             }
         } catch (_: Exception) {
-            null
+            emptyList()
         }
+    }
+
+    private fun msearch(host: String, searchTarget: String): ByteArray {
+        return buildString {
+            append("M-SEARCH * HTTP/1.1\r\n")
+            append("HOST: $host:1900\r\n")
+            append("MAN: \"ssdp:discover\"\r\n")
+            append("MX: 1\r\n")
+            append("ST: $searchTarget\r\n")
+            append("\r\n")
+        }.toByteArray()
+    }
+
+    private fun hostFromAddress(address: String): String? {
+        return address.removePrefix("/").takeIf { PrivateAddress.isPrivate(it) }
     }
 
     private fun portOpen(host: String, port: Int): Boolean {
@@ -261,7 +319,18 @@ class FireTvDiscovery(
         }
     }
 
+    private fun localIpv4(): String? {
+        return localAddresses().firstOrNull()
+    }
+
     private fun localPrefixes(): List<String> {
+        return localAddresses()
+            .map { it.substringBeforeLast('.') }
+            .distinct()
+            .take(2)
+    }
+
+    private fun localAddresses(): List<String> {
         return try {
             NetworkInterface.getNetworkInterfaces().toList()
                 .filter { it.isUp && !it.isLoopback }
@@ -269,9 +338,7 @@ class FireTvDiscovery(
                 .filterIsInstance<Inet4Address>()
                 .mapNotNull { it.hostAddress }
                 .filter { PrivateAddress.isPrivate(it) }
-                .map { it.substringBeforeLast('.') }
                 .distinct()
-                .take(2)
         } catch (_: Exception) {
             emptyList()
         }

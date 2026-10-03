@@ -4,6 +4,7 @@ data class DialDescription(
     val friendlyName: String?,
     val manufacturer: String?,
     val modelName: String?,
+    val deviceType: String?,
 )
 
 fun parseDialDescription(xml: String): DialDescription {
@@ -11,25 +12,62 @@ fun parseDialDescription(xml: String): DialDescription {
         friendlyName = xmlTag(xml, "friendlyName")?.decodeXml(),
         manufacturer = xmlTag(xml, "manufacturer")?.decodeXml(),
         modelName = xmlTag(xml, "modelName")?.decodeXml(),
+        deviceType = xmlTag(xml, "deviceType")?.decodeXml(),
     )
 }
 
 fun isFireTv(description: DialDescription): Boolean {
     val model = description.modelName.orEmpty()
     if (model.startsWith("AFT", ignoreCase = true)) return true
-    val blob = listOf(description.manufacturer, description.modelName, description.friendlyName)
-        .joinToString(" ")
-        .lowercase()
+    // Fire TV Edition sets advertise manufacturer "AMZ", not "Amazon".
+    val manufacturer = description.manufacturer.orEmpty().trim()
+    if (manufacturer.equals("AMZ", ignoreCase = true)) return true
+    if (manufacturer.contains("amazon", ignoreCase = true)) return true
+    val deviceType = description.deviceType.orEmpty()
+    if (deviceType.contains("dial-multiscreen-org", ignoreCase = true)) return true
+    val blob = listOf(
+        description.manufacturer,
+        description.modelName,
+        description.friendlyName,
+        description.deviceType,
+    ).joinToString(" ").lowercase()
     return blob.contains("amazon") || blob.contains("fire tv") || blob.contains("firetv")
 }
 
 fun locationFromSsdp(message: String): String? {
+    return ssdpHeader(message, "LOCATION")
+}
+
+fun ssdpHeader(message: String, name: String): String? {
     return message.lineSequence()
         .map { it.trim() }
-        .firstOrNull { it.startsWith("LOCATION:", ignoreCase = true) }
+        .firstOrNull { it.startsWith("$name:", ignoreCase = true) }
         ?.substringAfter(':')
         ?.trim()
         ?.takeIf { it.isNotEmpty() }
+}
+
+fun ssdpLooksLikeFireTv(message: String): Boolean {
+    val blob = message.lowercase()
+    return blob.contains("amazon") ||
+        blob.contains("aftt") ||
+        blob.contains("firetv") ||
+        blob.contains("fire tv") ||
+        blob.contains("nrdp")
+}
+
+fun decodeAdvertisedName(value: String): String {
+    val trimmed = value.trim()
+    val encoded = trimmed.length >= 4 &&
+        trimmed.length % 4 == 0 &&
+        trimmed.matches(Regex("^[A-Za-z0-9+/]+={0,2}$"))
+    if (!encoded) return trimmed
+    return try {
+        val text = java.util.Base64.getDecoder().decode(trimmed).toString(Charsets.UTF_8).trim()
+        if (text.isNotEmpty() && text.all { it.code >= 32 }) text else trimmed
+    } catch (_: IllegalArgumentException) {
+        trimmed
+    }
 }
 
 fun hostFromHttpUrl(url: String): String? {

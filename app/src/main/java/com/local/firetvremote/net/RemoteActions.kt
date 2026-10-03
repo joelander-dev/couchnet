@@ -13,8 +13,10 @@ object RemoteActions {
     // KEYCODE_CHANNEL_UP / KEYCODE_CHANNEL_DOWN, same snake_case rule as volume_up.
     const val CHANNEL_UP = "channel_up"
     const val CHANNEL_DOWN = "channel_down"
-    // KEYCODE_TV_INPUT. The short name "input" is not an action the Fire TV accepts.
-    const val INPUT = "tv_input"
+    // Menu key on the Fire TV remote. The Amazon app labels this button "menu".
+    const val OPTIONS = "menu"
+    // Power toggle. The Amazon app sends this as a normal key press.
+    const val POWER = "power"
     const val PLAY = "play"
     const val PAUSE = "pause"
     const val FAST_FORWARD = "fast_forward"

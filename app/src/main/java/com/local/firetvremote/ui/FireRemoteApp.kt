@@ -30,14 +30,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -141,26 +148,30 @@ private fun DevicesScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+            .padding(horizontal = 20.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Fire Remote", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+        Text("Fire TV", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
         Text(
-            "Finds and controls a Fire TV on this Wi-Fi only. Nothing is sent over the internet.",
+            "On this Wi-Fi only. Nothing leaves the local network.",
             color = Mist,
             style = MaterialTheme.typography.bodyMedium,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Button(
-                onClick = { onScan(false) },
-                enabled = !state.scanning,
-                colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = Color(0xFF1A1200)),
-            ) {
-                Text(if (state.scanning) "Scanning" else "Scan")
-            }
-            OutlinedButton(onClick = { onScan(true) }, enabled = !state.scanning) {
-                Text("Search whole network")
-            }
+        Button(
+            onClick = { onScan(false) },
+            enabled = !state.scanning,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = Color(0xFF1A1200)),
+        ) {
+            Text(if (state.scanning) "Scanning" else "Scan for Fire TVs", fontWeight = FontWeight.SemiBold)
+        }
+        TextButton(
+            onClick = { onScan(true) },
+            enabled = !state.scanning,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text("Search the whole network")
         }
         if (state.scanning) {
             CircularProgressIndicator(modifier = Modifier.size(28.dp), color = Amber, strokeWidth = 3.dp)
@@ -211,9 +222,11 @@ private fun DevicesScreen(
         Button(
             onClick = onPairAddress,
             enabled = state.manualAddress.isNotBlank() && !state.scanning,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = Color(0xFF1A1200)),
         ) {
-            Text("Pair this address")
+            Text("Pair this address", fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -235,11 +248,11 @@ private fun PairingScreen(
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        TextButton(onClick = onBack) { Text("Back") }
-        Text("Pair $name", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        TextButton(onClick = onBack) { Text("Devices") }
+        Text(name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         Text(host, color = Mist)
         Text(
-            "A code appears on the TV. Type it here. This stays on your Wi-Fi.",
+            "Enter the code shown on the TV. Pairing stays on your Wi-Fi.",
             color = Mist,
         )
         if (state.pairingBusy) {
@@ -261,9 +274,11 @@ private fun PairingScreen(
         Button(
             onClick = onSubmitPin,
             enabled = state.pin.length >= 4 && !state.pairingBusy,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = Color(0xFF1A1200)),
         ) {
-            Text("Pair")
+            Text("Pair", fontWeight = FontWeight.SemiBold)
         }
         state.error?.let {
             Text(it, color = Danger)
@@ -286,42 +301,57 @@ private fun RemoteScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = onBack) { Text("TVs") }
+            TextButton(onClick = onBack) { Text("Devices") }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onForget) { Text("Forget") }
         }
-        Text(device.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-        Text(device.host, color = Mist, style = MaterialTheme.typography.bodySmall)
-        Spacer(Modifier.height(6.dp))
+        Text(
+            device.name,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(4.dp))
         StatusLine(state.status)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(18.dp))
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(36.dp))
+                .clip(RoundedCornerShape(40.dp))
                 .background(RemoteBody)
-                .padding(16.dp),
+                .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(40.dp))
+                .padding(horizontal = 18.dp, vertical = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(22.dp),
         ) {
+            RoundKey(
+                action = RemoteActions.POWER,
+                label = "Power",
+                icon = Icons.Filled.PowerSettingsNew,
+                size = 56.dp,
+                restContent = Amber,
+                onHold = onHold,
+                onRelease = onRelease,
+            )
             BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val gap = 10.dp
-                val key = ((maxWidth - gap * 2) * 0.56f - gap * 2) / 3
+                val rockerWidth = 64.dp
+                val gap = 12.dp
+                val pad = (maxWidth - rockerWidth * 2 - gap * 2).coerceIn(180.dp, 260.dp)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(gap),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Rocker(
-                        modifier = Modifier.weight(0.22f),
+                        width = rockerWidth,
                         caption = "VOL",
                         upLabel = "Volume up",
                         downLabel = "Volume down",
@@ -330,14 +360,9 @@ private fun RemoteScreen(
                         onHold = onHold,
                         onRelease = onRelease,
                     )
-                    Dpad(
-                        modifier = Modifier.weight(0.56f),
-                        key = key,
-                        onHold = onHold,
-                        onRelease = onRelease,
-                    )
+                    Dpad(size = pad, onHold = onHold, onRelease = onRelease)
                     Rocker(
-                        modifier = Modifier.weight(0.22f),
+                        width = rockerWidth,
                         caption = "CH",
                         upLabel = "Channel up",
                         downLabel = "Channel down",
@@ -350,60 +375,22 @@ private fun RemoteScreen(
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                MediaKey(RemoteActions.PLAY, "Play", onHold, onRelease, Modifier.weight(1f))
-                MediaKey(RemoteActions.PAUSE, "Pause", onHold, onRelease, Modifier.weight(1f))
+                RoundKey(RemoteActions.REWIND, "Rewind", Icons.Filled.FastRewind, 52.dp, onHold, onRelease)
+                RoundKey(RemoteActions.PLAY, "Play", Icons.Filled.PlayArrow, 56.dp, onHold, onRelease)
+                RoundKey(RemoteActions.PAUSE, "Pause", Icons.Filled.Pause, 56.dp, onHold, onRelease)
+                RoundKey(RemoteActions.FAST_FORWARD, "Fast-forward", Icons.Filled.FastForward, 52.dp, onHold, onRelease)
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                MediaKey(RemoteActions.REWIND, "Rewind", onHold, onRelease, Modifier.weight(1f))
-                MediaKey(RemoteActions.FAST_FORWARD, "Fast-forward", onHold, onRelease, Modifier.weight(1f))
-            }
-            HoldKey(
-                action = RemoteActions.INPUT,
-                label = "Input",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                onHold = onHold,
-                onRelease = onRelease,
-            ) {
-                Text("INPUT", fontWeight = FontWeight.Bold)
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                HoldKey(
-                    action = RemoteActions.HOME,
-                    label = "Home",
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    onHold = onHold,
-                    onRelease = onRelease,
-                ) {
-                    Text("HOME", fontWeight = FontWeight.SemiBold)
-                }
-                HoldKey(
-                    action = RemoteActions.BACK,
-                    label = "Back",
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    onHold = onHold,
-                    onRelease = onRelease,
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    Spacer(Modifier.width(6.dp))
-                    Text("BACK", fontWeight = FontWeight.SemiBold)
-                }
+                RoundKey(RemoteActions.BACK, "Back", Icons.AutoMirrored.Filled.ArrowBack, 56.dp, onHold, onRelease)
+                RoundKey(RemoteActions.HOME, "Home", Icons.Filled.Home, 56.dp, onHold, onRelease)
+                RoundKey(RemoteActions.OPTIONS, "Options", Icons.Filled.Menu, 56.dp, onHold, onRelease)
             }
         }
 
@@ -414,70 +401,65 @@ private fun RemoteScreen(
                 TextButton(onClick = onRepair) { Text("Pair again") }
             }
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(12.dp))
         Text(
-            "Volume, channel, and input reach the TV when Fire TV equipment control is set up.",
+            "Volume, channel, and power reach the TV when Fire TV equipment control is set up.",
             color = Mist,
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 12.dp),
+            modifier = Modifier.padding(horizontal = 8.dp),
         )
     }
 }
 
 @Composable
 private fun Dpad(
-    modifier: Modifier,
-    key: Dp,
+    size: Dp,
     onHold: (String) -> Unit,
     onRelease: () -> Unit,
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        ArrowKey(RemoteActions.UP, "Up", Icons.Filled.KeyboardArrowUp, key, onHold, onRelease)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            ArrowKey(RemoteActions.LEFT, "Left", Icons.AutoMirrored.Filled.KeyboardArrowLeft, key, onHold, onRelease)
-            HoldKey(
-                action = RemoteActions.SELECT,
-                label = "OK",
-                modifier = Modifier.size(key),
-                shape = CircleShape,
-                onHold = onHold,
-                onRelease = onRelease,
+    val arrow = size * 0.28f
+    val ok = size * 0.34f
+    Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .background(Pad)
+                .border(1.dp, Color.White.copy(alpha = 0.05f), CircleShape),
+        )
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            GhostKey(RemoteActions.UP, "Up", Icons.Filled.KeyboardArrowUp, arrow, onHold, onRelease)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("OK", fontWeight = FontWeight.Bold)
+                GhostKey(RemoteActions.LEFT, "Left", Icons.AutoMirrored.Filled.KeyboardArrowLeft, arrow, onHold, onRelease)
+                HoldKey(
+                    action = RemoteActions.SELECT,
+                    label = "Select",
+                    modifier = Modifier.size(ok),
+                    shape = CircleShape,
+                    rest = KeyRest,
+                    onHold = onHold,
+                    onRelease = onRelease,
+                ) {
+                    Text("OK", fontWeight = FontWeight.Bold)
+                }
+                GhostKey(RemoteActions.RIGHT, "Right", Icons.AutoMirrored.Filled.KeyboardArrowRight, arrow, onHold, onRelease)
             }
-            ArrowKey(RemoteActions.RIGHT, "Right", Icons.AutoMirrored.Filled.KeyboardArrowRight, key, onHold, onRelease)
+            GhostKey(RemoteActions.DOWN, "Down", Icons.Filled.KeyboardArrowDown, arrow, onHold, onRelease)
         }
-        ArrowKey(RemoteActions.DOWN, "Down", Icons.Filled.KeyboardArrowDown, key, onHold, onRelease)
     }
 }
 
 @Composable
-private fun MediaKey(
-    action: String,
-    label: String,
-    onHold: (String) -> Unit,
-    onRelease: () -> Unit,
-    modifier: Modifier,
-) {
-    HoldKey(
-        action = action,
-        label = label,
-        modifier = modifier.height(52.dp),
-        shape = RoundedCornerShape(16.dp),
-        onHold = onHold,
-        onRelease = onRelease,
-    ) {
-        Text(label, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-@Composable
-private fun ArrowKey(
+private fun GhostKey(
     action: String,
     label: String,
     icon: ImageVector,
@@ -490,6 +472,30 @@ private fun ArrowKey(
         label = label,
         modifier = Modifier.size(size),
         shape = CircleShape,
+        rest = Color.Transparent,
+        onHold = onHold,
+        onRelease = onRelease,
+    ) {
+        Icon(icon, contentDescription = null)
+    }
+}
+
+@Composable
+private fun RoundKey(
+    action: String,
+    label: String,
+    icon: ImageVector,
+    size: Dp,
+    onHold: (String) -> Unit,
+    onRelease: () -> Unit,
+    restContent: Color = Color.White,
+) {
+    HoldKey(
+        action = action,
+        label = label,
+        modifier = Modifier.size(size),
+        shape = CircleShape,
+        restContent = restContent,
         onHold = onHold,
         onRelease = onRelease,
     ) {
@@ -499,7 +505,7 @@ private fun ArrowKey(
 
 @Composable
 private fun Rocker(
-    modifier: Modifier,
+    width: Dp,
     caption: String,
     upLabel: String,
     downLabel: String,
@@ -509,34 +515,39 @@ private fun Rocker(
     onRelease: () -> Unit,
 ) {
     Column(
-        modifier = modifier,
+        modifier = Modifier
+            .width(width)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(Pad)
+            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(percent = 50)),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(caption, color = Mist, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
         HoldKey(
             action = upAction,
             label = upLabel,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp),
-            shape = RoundedCornerShape(18.dp),
+                .height(72.dp),
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+            rest = Color.Transparent,
             onHold = onHold,
             onRelease = onRelease,
         ) {
-            Text("+", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text("+", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium)
         }
+        Text(caption, color = Mist, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
         HoldKey(
             action = downAction,
             label = downLabel,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp),
-            shape = RoundedCornerShape(18.dp),
+                .height(72.dp),
+            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
+            rest = Color.Transparent,
             onHold = onHold,
             onRelease = onRelease,
         ) {
-            Text("–", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text("–", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -546,15 +557,17 @@ private fun HoldKey(
     action: String,
     label: String,
     modifier: Modifier,
-    shape: androidx.compose.ui.graphics.Shape,
+    shape: Shape,
     onHold: (String) -> Unit,
     onRelease: () -> Unit,
+    rest: Color = KeyRest,
+    restContent: Color = Color.White,
     content: @Composable () -> Unit,
 ) {
     var pressed by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
-    val color = if (pressed) KeyDown else KeyRest
-    val contentColor = if (pressed) Color(0xFF1A1200) else Color.White
+    val color = if (pressed) KeyDown else rest
+    val contentColor = if (pressed) Color(0xFF1A1200) else restContent
     Row(
         modifier = modifier
             .clip(shape)
@@ -619,9 +632,10 @@ private fun DeviceRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(RemoteBody)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {

@@ -12,6 +12,7 @@ val Pad = Color(0xFF1C1C22)
 val KeyDown = Color(0xFFFF9900)
 val Amber = Color(0xFFFF9900)
 val Mist = Color(0xFF9C9CA8)
+val Name = Color(0xFFF7F7F8)
 val Danger = Color(0xFFFFB4AB)
 
 private val Colors = darkColorScheme(

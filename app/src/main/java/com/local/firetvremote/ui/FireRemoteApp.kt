@@ -151,7 +151,7 @@ private fun DevicesScreen(
             .padding(horizontal = 20.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Fire TV", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+        Text("Fire TV", color = Name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text(
             "On this Wi-Fi only. Nothing leaves the local network.",
             color = Mist,
@@ -249,7 +249,7 @@ private fun PairingScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         TextButton(onClick = onBack) { Text("Devices") }
-        Text(name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        Text(name, color = Name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text(host, color = Mist)
         Text(
             "Enter the code shown on the TV. Pairing stays on your Wi-Fi.",
@@ -314,8 +314,9 @@ private fun RemoteScreen(
         }
         Text(
             device.name,
+            color = Name,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(4.dp))
@@ -639,7 +640,7 @@ private fun DeviceRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(title, color = Name, fontWeight = FontWeight.SemiBold)
             Text(subtitle, color = Mist, style = MaterialTheme.typography.bodySmall)
         }
         TextButton(onClick = onAction) { Text(action) }

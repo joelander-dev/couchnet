@@ -156,7 +156,7 @@ class LocalNetworkTest {
         )
         assertTrue(isFireTv(edition))
         assertEquals("Living Room", edition.friendlyName)
-        assertEquals("Living Room", decodeAdvertisedName("TmF0aGFuJ3MgVFY="))
+        assertEquals("Living Room", decodeAdvertisedName("TGl2aW5nIFJvb20="))
         assertEquals("Living Room", decodeAdvertisedName("Living Room"))
         assertTrue(
             ssdpLooksLikeFireTv(

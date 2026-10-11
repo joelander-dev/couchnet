@@ -70,6 +70,8 @@ How the release workflow signs the APK
 4. Runs apksigner verify --verbose --print-certs on the signed file.
    The job fails if the signature is not valid.
 5. Deletes the temporary keystore, then uploads app-release.apk.
+6. When the run is for a version tag, creates the GitHub release for that
+   tag if needed and attaches fire-remote-v1.0.0.apk.
 
 The keystore never goes into the git repo. The runner only has it for
 that job.
@@ -80,12 +82,17 @@ Run the release workflow
 
 After the four secrets exist, either:
 
-- On GitHub, open Actions, choose Release, and click Run workflow.
-- Or push a version tag, which starts the same workflow:
+- Push a version tag. That starts the workflow and publishes the signed
+  APK on the GitHub release for that tag:
 
     git tag v1.0.0
     git push origin v1.0.0
 
-Download app-release from the finished run's artifacts. That is the
-signed APK. The debug workflow on main is separate and does not use
-the keystore.
+- Or, on GitHub, open Actions, choose Release, and click Run workflow.
+  Type the same tag, such as v1.0.0, to build that tag and attach the
+  APK to its release. Leave the tag empty to only keep the build
+  artifact.
+
+Download fire-remote-v1.0.0.apk from the repository Releases page.
+The run also keeps app-release under artifacts. The debug workflow on
+main is separate and does not use the keystore.

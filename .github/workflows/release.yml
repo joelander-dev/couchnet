@@ -7,14 +7,9 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: Tag to build and publish, such as v1.0.0. Leave empty to only upload a build artifact.
-        required: false
-        type: string
   push:
     tags:
-      - "v*"
+      - "*"
 
 permissions:
   contents: write
@@ -24,8 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - uses: actions/setup-java@v6
         with:
@@ -75,29 +68,19 @@ jobs:
           if-no-files-found: error
 
       - name: Add the APK to the GitHub release
-        if: github.ref_type == 'tag' || inputs.tag != ''
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            tag="${GITHUB_REF_NAME}"
-          else
-            tag="${{ inputs.tag }}"
-          fi
-          case "$tag" in
-            v*) ;;
-            *)
-              echo "The release tag must look like v1.0.0."
-              exit 1
-              ;;
-          esac
+          tag="${GITHUB_REF_NAME}"
           asset="fire-remote-${tag}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$asset"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" --clobber
           else
             gh release create "$tag" "$asset" \
+              --target "${GITHUB_SHA}" \
               --title "$tag" \
               --notes "Signed Fire Remote APK."
           fi

@@ -3,7 +3,14 @@ name: Android
 on:
   push:
     branches: [main]
+    paths-ignore: &docs-only
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - ".github/badge_obtainium.png"
+      - ".github/dependabot.yml"
   pull_request:
+    paths-ignore: *docs-only
 
 jobs:
   build:

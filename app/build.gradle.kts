@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "com.local.firetvremote"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         // Release builds pass these from the workflow; local builds use the defaults.
         versionCode = (findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 1
         versionName = (findProperty("appVersionName") as String?)?.removePrefix("v") ?: "1.0"

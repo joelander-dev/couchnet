@@ -6,3 +6,18 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Hold back releases for two weeks so early bugs get found first.
+    cooldown:
+      default-days: 14
+    groups:
+      androidx:
+        patterns: ["androidx.*"]
+      kotlin:
+        patterns: ["org.jetbrains.kotlin*", "org.jetbrains.kotlinx*"]

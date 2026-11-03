@@ -36,3 +36,22 @@ jobs:
           name: app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+  # Sends the resolved Gradle dependencies to GitHub so Dependabot can raise
+  # security alerts for them. GitHub cannot read build.gradle.kts on its own.
+  dependencies:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v4
+
+      - uses: gradle/actions/dependency-submission@v6

@@ -271,12 +271,12 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
         val screen = _state.value.screen as? Screen.Pairing ?: return
         client.wake(screen.host)
         delay(400)
-        val shown = client.requestPin(screen.host, "Fire Remote")
+        val shown = client.requestPin(screen.host, "Couchnet")
         if (!shown) {
             client.wake(screen.host)
             delay(800)
         }
-        val retry = shown || client.requestPin(screen.host, "Fire Remote")
+        val retry = shown || client.requestPin(screen.host, "Couchnet")
         _state.update {
             if (it.screen !is Screen.Pairing) return@update it
             if (retry) {

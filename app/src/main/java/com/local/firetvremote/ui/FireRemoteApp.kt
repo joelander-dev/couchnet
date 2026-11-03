@@ -151,7 +151,7 @@ private fun DevicesScreen(
             .padding(horizontal = 20.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Fire TV", color = Name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text("Couchnet", color = Name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text(
             "On this Wi-Fi only. Nothing leaves the local network.",
             color = Mist,

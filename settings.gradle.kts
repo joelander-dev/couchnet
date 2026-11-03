@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "FireRemote"
+rootProject.name = "Couchnet"
 include(":app")

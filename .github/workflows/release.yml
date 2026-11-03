@@ -83,7 +83,7 @@ jobs:
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
-          asset="fire-remote-${tag}.apk"
+          asset="couchnet-${tag}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$asset"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" --clobber
@@ -91,5 +91,5 @@ jobs:
             gh release create "$tag" "$asset" \
               --target "${GITHUB_SHA}" \
               --title "$tag" \
-              --notes "Signed Fire Remote APK."
+              --notes "Signed Couchnet APK."
           fi

@@ -48,7 +48,7 @@ New repository secret, and create these four:
     git push origin v1.0.0
 
 The Release workflow builds the tagged commit, signs it with `apksigner`,
-verifies the signature, and attaches `fire-remote-v1.0.0.apk` to the
+verifies the signature, and attaches `couchnet-v1.0.0.apk` to the
 `v1.0.0` release. The app's version name comes from the tag (a leading `v`
 is dropped). The version code is the workflow run number, which goes up with
 every run, so each release installs as an update over the one before.

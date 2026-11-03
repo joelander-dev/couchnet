@@ -1,12 +1,14 @@
-# Fire Remote
+# Couchnet
 
-<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.local.firetvremote%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fjoelander-dev%2Ffiretv-remote%22%2C%22author%22%3A%22joelander-dev%22%2C%22name%22%3A%22Fire%20Remote%22%7D"><img src=".github/badge_obtainium.png" alt="Get it on Obtainium" width="161" height="48"></a>
+**A local remote for Fire TV.**
+
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.local.firetvremote%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fjoelander-dev%2Fcouchnet%22%2C%22author%22%3A%22joelander-dev%22%2C%22name%22%3A%22Couchnet%22%7D"><img src=".github/badge_obtainium.png" alt="Get it on Obtainium" width="161" height="48"></a>
 
 An Android app that controls a Fire TV over your home Wi-Fi. It talks to the
 Fire TV directly on your local network. It has no account and no cloud
 service, and it never connects to anything outside your home network.
 
-> Fire Remote is an independent project. It is not affiliated with, endorsed
+> Couchnet is an independent project. It is not affiliated with, endorsed
 > by, or sponsored by Amazon. "Fire TV" is a trademark of Amazon.com, Inc. or
 > its affiliates.
 
@@ -24,18 +26,18 @@ Requires Android 8.0 or newer.
 
 **With [Obtainium](https://github.com/ImranR98/Obtainium)** (gets updates
 automatically): tap the **Get it on Obtainium** button above on your phone,
-or add `https://github.com/joelander-dev/firetv-remote` in Obtainium.
+or add `https://github.com/joelander-dev/couchnet` in Obtainium.
 
 **By hand:**
 
-1. Download `fire-remote-<version>.apk` from the [Releases](../../releases) page.
+1. Download `couchnet-<version>.apk` from the [Releases](../../releases) page.
 2. Open it on your phone. If asked, allow installs from your browser or file
    manager.
 
 ## Use
 
 1. Connect your phone to the same Wi-Fi network as the Fire TV.
-2. Open Fire Remote and pick your TV from the list. If it doesn't appear,
+2. Open Couchnet and pick your TV from the list. If it doesn't appear,
    tap **Search the whole network** or type in the TV's IP address
    (on the Fire TV: Settings → My Fire TV → About → Network).
 3. Enter the PIN that appears on the TV.

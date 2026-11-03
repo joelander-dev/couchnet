@@ -51,7 +51,7 @@ class FireTvClient(
 
     suspend fun requestPin(host: String, friendlyName: String): Boolean = withContext(Dispatchers.IO) {
         val safeName = friendlyName.filter { it.isLetterOrDigit() || it == ' ' || it == '-' }.take(40)
-            .ifBlank { "Fire Remote" }
+            .ifBlank { "Couchnet" }
         val body = """{"friendlyName":"$safeName"}"""
         val request = try {
             buildJsonRequest(

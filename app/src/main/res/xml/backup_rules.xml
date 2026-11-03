@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 8 to 11. Keeps pairing tokens out of backups, like
+     data_extraction_rules.xml does for Android 12 and higher. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>

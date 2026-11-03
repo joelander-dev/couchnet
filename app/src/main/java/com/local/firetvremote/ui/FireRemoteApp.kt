@@ -70,6 +70,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.local.firetvremote.STATUS_CONNECTED
+import com.local.firetvremote.STATUS_CONNECTING
 import com.local.firetvremote.Screen
 import com.local.firetvremote.UiState
 import com.local.firetvremote.data.SavedDevice
@@ -608,15 +610,30 @@ private fun HoldKey(
 
 @Composable
 private fun StatusLine(status: String) {
-    val live = status == "Connected"
+    val live = status == STATUS_CONNECTED
+    val checking = status == STATUS_CONNECTING
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(
             Modifier
                 .size(8.dp)
                 .clip(CircleShape)
-                .background(if (live) Color(0xFF3DDC84) else Color(0xFF6E6E78)),
+                .background(
+                    when {
+                        live -> Color(0xFF3DDC84)
+                        checking -> Color(0xFFFFB020)
+                        else -> Color(0xFF6E6E78)
+                    },
+                ),
         )
-        Text(if (live) "Connected on this Wi-Fi" else "Ready", color = Mist, style = MaterialTheme.typography.bodySmall)
+        Text(
+            when {
+                live -> "Connected to this TV"
+                checking -> "Connecting…"
+                else -> "Ready"
+            },
+            color = Mist,
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 

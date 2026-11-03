@@ -59,9 +59,7 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
         val saved = store.load()
         val last = saved.firstOrNull { it.host == store.lastHost() } ?: saved.firstOrNull()
         _state.update { it.copy(saved = saved, screen = if (last != null) Screen.Remote(last) else Screen.Devices) }
-        if (last != null) {
-            viewModelScope.launch { client.wake(last.host) }
-        }
+        if (last != null) connect(last)
         viewModelScope.launch { refreshGeneratedNames(saved) }
     }
 
@@ -208,7 +206,8 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
                     saved = updated,
                     pairingBusy = false,
                     pin = "",
-                    status = "Paired",
+                    // The TV just answered the pairing request, so it is reachable.
+                    status = STATUS_CONNECTED,
                     error = null,
                     needsRepair = false,
                     screen = Screen.Remote(device),
@@ -219,8 +218,29 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openSaved(device: SavedDevice) {
         store.setLastHost(device.host)
-        _state.update { it.copy(screen = Screen.Remote(device), error = null, needsRepair = false, status = "") }
-        viewModelScope.launch { client.wake(device.host) }
+        _state.update { it.copy(screen = Screen.Remote(device), error = null, needsRepair = false) }
+        connect(device)
+    }
+
+    /**
+     * Wakes the TV's remote service and uses the answer to show the connection
+     * status right away, instead of waiting for the first button press.
+     * A missed wake only falls back to the neutral status; the first button
+     * press still confirms the connection.
+     */
+    private fun connect(device: SavedDevice) {
+        _state.update { it.copy(status = STATUS_CONNECTING) }
+        viewModelScope.launch {
+            val reachable = client.wake(device.host)
+            _state.update {
+                val sameTv = (it.screen as? Screen.Remote)?.device?.host == device.host
+                if (sameTv && it.status == STATUS_CONNECTING) {
+                    it.copy(status = if (reachable) STATUS_CONNECTED else "")
+                } else {
+                    it
+                }
+            }
+        }
     }
 
     fun forget(host: String) {
@@ -294,7 +314,7 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun send(device: SavedDevice, action: String): Boolean {
         return when (val result = client.command(device.host, device.token, action)) {
             CommandResult.Ok -> {
-                _state.update { it.copy(status = "Connected", error = null, needsRepair = false) }
+                _state.update { it.copy(status = STATUS_CONNECTED, error = null, needsRepair = false) }
                 true
             }
             CommandResult.Cancelled -> false
@@ -315,3 +335,6 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 }
+
+const val STATUS_CONNECTING = "Connecting"
+const val STATUS_CONNECTED = "Connected"

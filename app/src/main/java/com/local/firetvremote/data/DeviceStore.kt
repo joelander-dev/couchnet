@@ -1,6 +1,7 @@
 package com.local.firetvremote.data
 
 import android.content.Context
+import androidx.core.content.edit
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -43,13 +44,13 @@ class DeviceStore(context: Context) {
                     .put("token", device.token),
             )
         }
-        prefs.edit().putString(KEY_DEVICES, array.toString()).apply()
+        prefs.edit { putString(KEY_DEVICES, array.toString()) }
     }
 
     fun lastHost(): String? = prefs.getString(KEY_LAST, null)
 
     fun setLastHost(host: String) {
-        prefs.edit().putString(KEY_LAST, host).apply()
+        prefs.edit { putString(KEY_LAST, host) }
     }
 
     companion object {

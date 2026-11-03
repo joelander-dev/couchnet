@@ -26,7 +26,10 @@ sealed interface Screen {
     data object Devices : Screen
     data class Pairing(val name: String, val host: String) : Screen
     data class Remote(val device: SavedDevice) : Screen
+    data object Settings : Screen
 }
+
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 data class UiState(
     val screen: Screen = Screen.Devices,
@@ -40,6 +43,7 @@ data class UiState(
     val status: String = "",
     val error: String? = null,
     val needsRepair: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
 )
 
 class RemoteViewModel(app: Application) : AndroidViewModel(app) {
@@ -58,7 +62,13 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
     init {
         val saved = store.load()
         val last = saved.firstOrNull { it.host == store.lastHost() } ?: saved.firstOrNull()
-        _state.update { it.copy(saved = saved, screen = if (last != null) Screen.Remote(last) else Screen.Devices) }
+        _state.update {
+            it.copy(
+                saved = saved,
+                screen = if (last != null) Screen.Remote(last) else Screen.Devices,
+                themeMode = store.themeMode(),
+            )
+        }
         if (last != null) connect(last)
         viewModelScope.launch { refreshGeneratedNames(saved) }
     }
@@ -69,6 +79,16 @@ class RemoteViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onPin(value: String) {
         _state.update { it.copy(pin = value.filter { char -> char.isDigit() }.take(8), error = null) }
+    }
+
+    fun showSettings() {
+        release()
+        _state.update { it.copy(screen = Screen.Settings, error = null) }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        store.setThemeMode(mode)
+        _state.update { it.copy(themeMode = mode) }
     }
 
     fun showDevices() {

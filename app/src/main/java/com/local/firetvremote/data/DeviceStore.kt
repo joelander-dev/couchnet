@@ -2,6 +2,7 @@ package com.local.firetvremote.data
 
 import android.content.Context
 import androidx.core.content.edit
+import com.local.firetvremote.ThemeMode
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -53,9 +54,19 @@ class DeviceStore(context: Context) {
         prefs.edit { putString(KEY_LAST, host) }
     }
 
+    fun themeMode(): ThemeMode {
+        val saved = prefs.getString(KEY_THEME, null)
+        return ThemeMode.entries.firstOrNull { it.name == saved } ?: ThemeMode.SYSTEM
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        prefs.edit { putString(KEY_THEME, mode.name) }
+    }
+
     companion object {
         private const val PREFS = "fire_remote"
         private const val KEY_DEVICES = "devices"
         private const val KEY_LAST = "last_host"
+        private const val KEY_THEME = "theme_mode"
     }
 }

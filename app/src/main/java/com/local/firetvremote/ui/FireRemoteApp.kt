@@ -39,10 +39,15 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -61,6 +66,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -70,9 +76,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.local.firetvremote.BuildConfig
 import com.local.firetvremote.STATUS_CONNECTED
 import com.local.firetvremote.STATUS_CONNECTING
 import com.local.firetvremote.Screen
+import com.local.firetvremote.ThemeMode
 import com.local.firetvremote.UiState
 import com.local.firetvremote.data.SavedDevice
 import com.local.firetvremote.net.DiscoveredTv
@@ -93,6 +101,8 @@ fun FireRemoteApp(
     onHold: (String) -> Unit,
     onRelease: () -> Unit,
     onRepair: () -> Unit,
+    onShowSettings: () -> Unit,
+    onThemeMode: (ThemeMode) -> Unit,
 ) {
     val screen = state.screen
     if (screen !is Screen.Devices) {
@@ -113,6 +123,7 @@ fun FireRemoteApp(
                 onPairAddress = onPairAddress,
                 onOpenSaved = onOpenSaved,
                 onForget = onForget,
+                onShowSettings = onShowSettings,
             )
             is Screen.Pairing -> PairingScreen(
                 state = state,
@@ -132,6 +143,11 @@ fun FireRemoteApp(
                 onForget = { onForget(screen.device.host) },
                 onRepair = onRepair,
             )
+            Screen.Settings -> SettingsScreen(
+                themeMode = state.themeMode,
+                onThemeMode = onThemeMode,
+                onBack = onShowDevices,
+            )
         }
     }
 }
@@ -145,6 +161,7 @@ private fun DevicesScreen(
     onPairAddress: () -> Unit,
     onOpenSaved: (SavedDevice) -> Unit,
     onForget: (String) -> Unit,
+    onShowSettings: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -153,7 +170,18 @@ private fun DevicesScreen(
             .padding(horizontal = 20.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Couchnet", color = Name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Couchnet",
+                color = Name,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onShowSettings) {
+                Icon(Icons.Filled.Settings, contentDescription = "Settings", tint = Mist)
+            }
+        }
         Text(
             "On this Wi-Fi only. Nothing leaves the local network.",
             color = Mist,
@@ -164,7 +192,7 @@ private fun DevicesScreen(
             enabled = !state.scanning,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = Color(0xFF1A1200)),
+            colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = OnAmber),
         ) {
             Text(if (state.scanning) "Scanning" else "Scan for Fire TVs", fontWeight = FontWeight.SemiBold)
         }
@@ -229,9 +257,20 @@ private fun DevicesScreen(
             enabled = state.manualAddress.isNotBlank() && !state.scanning,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = Color(0xFF1A1200)),
+            colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = OnAmber),
         ) {
             Text("Pair this address", fontWeight = FontWeight.SemiBold)
+        }
+        TextButton(
+            onClick = onShowSettings,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text(
+                "Independent app. Not affiliated with Amazon.",
+                color = Mist,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
@@ -281,7 +320,7 @@ private fun PairingScreen(
             enabled = state.pin.length >= 4 && !state.pairingBusy,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = Color(0xFF1A1200)),
+            colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = OnAmber),
         ) {
             Text("Pair", fontWeight = FontWeight.SemiBold)
         }
@@ -333,7 +372,7 @@ private fun RemoteScreen(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(40.dp))
                 .background(RemoteBody)
-                .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(40.dp))
+                .border(1.dp, Hairline, RoundedCornerShape(40.dp))
                 .padding(horizontal = 18.dp, vertical = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(22.dp),
@@ -343,7 +382,7 @@ private fun RemoteScreen(
                 label = "Power",
                 icon = Icons.Filled.PowerSettingsNew,
                 size = 56.dp,
-                restContent = Amber,
+                restContent = AccentContent,
                 onHold = onHold,
                 onRelease = onRelease,
             )
@@ -432,7 +471,7 @@ private fun Dpad(
                 .fillMaxSize()
                 .clip(CircleShape)
                 .background(Pad)
-                .border(1.dp, Color.White.copy(alpha = 0.05f), CircleShape),
+                .border(1.dp, Hairline, CircleShape),
         )
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -494,7 +533,7 @@ private fun RoundKey(
     size: Dp,
     onHold: (String) -> Unit,
     onRelease: () -> Unit,
-    restContent: Color = Color.White,
+    restContent: Color = KeyContent,
 ) {
     HoldKey(
         action = action,
@@ -525,7 +564,7 @@ private fun Rocker(
             .width(width)
             .clip(RoundedCornerShape(percent = 50))
             .background(Pad)
-            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(percent = 50)),
+            .border(1.dp, Hairline, RoundedCornerShape(percent = 50)),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         HoldKey(
@@ -567,18 +606,18 @@ private fun HoldKey(
     onHold: (String) -> Unit,
     onRelease: () -> Unit,
     rest: Color = KeyRest,
-    restContent: Color = Color.White,
+    restContent: Color = KeyContent,
     content: @Composable () -> Unit,
 ) {
     var pressed by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
     val color = if (pressed) KeyDown else rest
-    val contentColor = if (pressed) Color(0xFF1A1200) else restContent
+    val contentColor = if (pressed) OnAmber else restContent
     Row(
         modifier = modifier
             .clip(shape)
             .background(color)
-            .border(1.dp, Color.White.copy(alpha = 0.06f), shape)
+            .border(1.dp, Hairline, shape)
             .semantics(mergeDescendants = true) {
                 role = Role.Button
                 contentDescription = label
@@ -621,7 +660,7 @@ private fun StatusLine(status: String) {
                     when {
                         live -> Color(0xFF3DDC84)
                         checking -> Color(0xFFFFB020)
-                        else -> Color(0xFF6E6E78)
+                        else -> StatusIdle
                     },
                 ),
         )
@@ -655,7 +694,7 @@ private fun DeviceRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(RemoteBody)
-            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(20.dp))
+            .border(1.dp, Hairline, RoundedCornerShape(20.dp))
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -669,3 +708,78 @@ private fun DeviceRow(
         }
     }
 }
+
+@Composable
+private fun SettingsScreen(
+    themeMode: ThemeMode,
+    onThemeMode: (ThemeMode) -> Unit,
+    onBack: () -> Unit,
+) {
+    val uriHandler = LocalUriHandler.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        TextButton(onClick = onBack) { Text("Devices") }
+        Text("Settings", color = Name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+
+        SectionLabel("Appearance")
+        val modes = listOf(ThemeMode.SYSTEM to "System", ThemeMode.LIGHT to "Light", ThemeMode.DARK to "Dark")
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            modes.forEachIndexed { index, (mode, label) ->
+                SegmentedButton(
+                    selected = themeMode == mode,
+                    onClick = { onThemeMode(mode) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                ) {
+                    Text(label)
+                }
+            }
+        }
+        Text(
+            "System follows your phone's light or dark setting.",
+            color = Mist,
+            style = MaterialTheme.typography.bodySmall,
+        )
+
+        Spacer(Modifier.height(8.dp))
+        SectionLabel("About")
+        Text("Couchnet ${BuildConfig.VERSION_NAME}", color = Name)
+        Text(
+            "A remote for Fire TV that works only on your home Wi-Fi. It has no account " +
+                "and no cloud service, and it never connects outside your local network.",
+            color = Mist,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(RemoteBody)
+                .border(1.dp, Hairline, RoundedCornerShape(20.dp))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("Disclaimer", color = Name, fontWeight = FontWeight.SemiBold)
+            Text(
+                "Couchnet is an independent project. It is not affiliated with, endorsed by, " +
+                    "or sponsored by Amazon. Fire TV is a trademark of Amazon.com, Inc. or its affiliates.",
+                color = Mist,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                "Couchnet is provided as is, without warranty of any kind, under the MIT License.",
+                color = Mist,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        TextButton(onClick = { uriHandler.openUri(SOURCE_URL) }) {
+            Text("Source code and license on GitHub")
+        }
+    }
+}
+
+private const val SOURCE_URL = "https://github.com/joelander-dev/couchnet"

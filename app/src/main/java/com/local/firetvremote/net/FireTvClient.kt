@@ -235,6 +235,7 @@ private fun requireLocal(host: String, permitLoopback: Boolean) {
     }
 }
 
+// Not a secret: every Fire TV expects this fixed value in X-Api-Key.
 private const val API_KEY = "0987654321"
 private const val USER_AGENT = "okhttp/4.10.0"
 private val JSON = "application/json; charset=utf-8".toMediaType()

@@ -23,8 +23,8 @@ fun isFireTv(description: DialDescription): Boolean {
     val manufacturer = description.manufacturer.orEmpty().trim()
     if (manufacturer.equals("AMZ", ignoreCase = true)) return true
     if (manufacturer.contains("amazon", ignoreCase = true)) return true
-    val deviceType = description.deviceType.orEmpty()
-    if (deviceType.contains("dial-multiscreen-org", ignoreCase = true)) return true
+    // The DIAL deviceType (urn:dial-multiscreen-org:...) is not checked on its
+    // own: Chromecasts and many smart TVs advertise the same type.
     val blob = listOf(
         description.manufacturer,
         description.modelName,
@@ -52,8 +52,8 @@ fun ssdpLooksLikeFireTv(message: String): Boolean {
     return blob.contains("amazon") ||
         blob.contains("aftt") ||
         blob.contains("firetv") ||
-        blob.contains("fire tv") ||
-        blob.contains("nrdp")
+        blob.contains("fire tv")
+    // "NRDP" is not checked: it is Netflix's device marker and many TVs send it.
 }
 
 fun decodeAdvertisedName(value: String): String {

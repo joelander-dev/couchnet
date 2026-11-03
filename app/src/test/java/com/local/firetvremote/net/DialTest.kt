@@ -48,6 +48,29 @@ class DialTest {
     }
 
     @Test
+    fun genericDialDevicesAreNotFireTvs() {
+        val chromecast = parseDialDescription(
+            """
+            <device>
+              <deviceType>urn:dial-multiscreen-org:device:dial:1</deviceType>
+              <friendlyName>Kitchen</friendlyName>
+              <manufacturer>Google Inc.</manufacturer>
+              <modelName>Eureka Dongle</modelName>
+            </device>
+            """.trimIndent(),
+        )
+        assertFalse(isFireTv(chromecast))
+    }
+
+    @Test
+    fun netflixMarkerAloneIsNotAFireTv() {
+        val smartTv = "HTTP/1.1 200 OK\r\nSERVER: Linux/4.4 UPnP/1.0\r\n" +
+            "X-User-Agent: NRDP MDX\r\nUSN: uuid:lg-webos::urn:dial-multiscreen-org:service:dial:1\r\n"
+        assertFalse(ssdpLooksLikeFireTv(smartTv))
+        assertTrue(ssdpLooksLikeFireTv("SERVER: Linux UPnP/1.0 AFTT/1\r\n"))
+    }
+
+    @Test
     fun prefersHeaderTokenOverBody() {
         assertEquals("HeadTok1", tokenFromPinResponse("""{"description":"BodyTok1"}""", " HeadTok1 "))
         assertEquals("BodyTok1", tokenFromPinResponse("""{"description":"BodyTok1"}""", "invalid"))

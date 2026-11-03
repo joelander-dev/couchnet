@@ -29,7 +29,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      - name: Build the unsigned release APK
+      - name: Test and build the unsigned release APK
         run: |
           set -euo pipefail
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
@@ -37,7 +37,7 @@ jobs:
           else
             name="0.0.0-dev.${GITHUB_RUN_NUMBER}"
           fi
-          ./gradlew :app:assembleRelease \
+          ./gradlew :app:testDebugUnitTest :app:assembleRelease \
             -PappVersionCode="${GITHUB_RUN_NUMBER}" \
             -PappVersionName="${name}"
 

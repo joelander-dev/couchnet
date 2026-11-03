@@ -30,7 +30,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       - name: Build the unsigned release APK
-        run: ./gradlew :app:assembleRelease
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            name="${GITHUB_REF_NAME}"
+          else
+            name="0.0.0-dev.${GITHUB_RUN_NUMBER}"
+          fi
+          ./gradlew :app:assembleRelease \
+            -PappVersionCode="${GITHUB_RUN_NUMBER}" \
+            -PappVersionName="${name}"
 
       - name: Sign and verify the release APK
         env:

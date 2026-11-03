@@ -1,5 +1,7 @@
 # Fire Remote
 
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.local.firetvremote%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fjoelander-dev%2Ffiretv-remote%22%2C%22author%22%3A%22joelander-dev%22%2C%22name%22%3A%22Fire%20Remote%22%7D"><img src=".github/badge_obtainium.png" alt="Get it on Obtainium" width="161" height="48"></a>
+
 An Android app that controls a Fire TV over your home Wi-Fi. It talks to the
 Fire TV directly on your local network. It has no account and no cloud
 service, and it never connects to anything outside your home network.
@@ -18,9 +20,17 @@ service, and it never connects to anything outside your home network.
 
 ## Install
 
+Requires Android 8.0 or newer.
+
+**With [Obtainium](https://github.com/ImranR98/Obtainium)** (gets updates
+automatically): tap the **Get it on Obtainium** button above on your phone,
+or add `https://github.com/joelander-dev/firetv-remote` in Obtainium.
+
+**By hand:**
+
 1. Download `fire-remote-<version>.apk` from the [Releases](../../releases) page.
-2. Open it on your Android phone (Android 8.0 or newer). If asked, allow
-   installs from your browser or file manager.
+2. Open it on your phone. If asked, allow installs from your browser or file
+   manager.
 
 ## Use
 

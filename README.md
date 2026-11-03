@@ -68,6 +68,21 @@ The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 The Android workflow builds and tests on every push to `main` and every pull
 request, and uploads that APK as an artifact.
 
+## AI disclosure
+
+Couchnet is built with help from AI coding assistants. I currently use
+[Claude Code](https://claude.com/claude-code) by Anthropic, and I used
+[Cursor](https://cursor.com) for earlier work on the project.
+
+The assistants help write code, tests and documentation. I decide what goes
+into the app, and I test each release on my own phone and Fire TV before
+publishing it.
+
+Commits that an assistant helped with are marked with a co-author line:
+
+- Claude Code: `Co-Authored-By: Claude …`
+- Cursor: `Co-authored-by: Cursor <cursoragent@cursor.com>`
+
 ## License
 
 [MIT](LICENSE)

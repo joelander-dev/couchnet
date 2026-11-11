@@ -11,7 +11,7 @@ buildscript {
             classpath("com.google.guava:guava:33.7.2-jre")
             classpath("org.bitbucket.b_c:jose4j:0.9.6")
             classpath("org.jdom:jdom2:2.0.6.1")
-            classpath("org.apache.commons:commons-lang3:3.18.0")
+            classpath("org.apache.commons:commons-lang3:3.21.0")
             classpath("org.apache.httpcomponents:httpclient:4.5.14")
         }
     }
@@ -31,7 +31,7 @@ subprojects {
             "org.bouncycastle:bcpkix-jdk18on:1.86",
             "org.bouncycastle:bcutil-jdk18on:1.85",
             "com.google.guava:guava:33.7.2-jre",
-            "org.apache.commons:commons-lang3:3.18.0",
+            "org.apache.commons:commons-lang3:3.21.0",
             "org.apache.httpcomponents:httpclient:4.5.14",
         )
     }

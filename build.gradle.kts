@@ -5,7 +5,7 @@
 buildscript {
     dependencies {
         constraints {
-            classpath("org.bouncycastle:bcprov-jdk18on:1.85")
+            classpath("org.bouncycastle:bcprov-jdk18on:1.86")
             classpath("org.bouncycastle:bcpkix-jdk18on:1.86")
             classpath("org.bouncycastle:bcutil-jdk18on:1.86")
             classpath("com.google.guava:guava:33.7.2-jre")
@@ -27,7 +27,7 @@ plugins {
 subprojects {
     configurations.matching { it.name == "androidLintTool" }.configureEach {
         resolutionStrategy.force(
-            "org.bouncycastle:bcprov-jdk18on:1.85",
+            "org.bouncycastle:bcprov-jdk18on:1.86",
             "org.bouncycastle:bcpkix-jdk18on:1.86",
             "org.bouncycastle:bcutil-jdk18on:1.86",
             "com.google.guava:guava:33.7.2-jre",
